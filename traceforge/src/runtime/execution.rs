@@ -222,7 +222,7 @@ impl ExecutionState {
     where
         F: FnOnce(&mut ExecutionState) -> T,
     {
-        Self::try_with(f).expect("The Must API (spawn, recv_msg, etc.) should be used only from threads launched using amzn_must::spawn and only inside a Must test.")
+        Self::try_with(f).expect("The TraceForge API (spawn, recv_msg, etc.) should be used only from threads launched using traceforge::spawn and only inside a TraceForge test.")
     }
 
     /// Like `with`, but returns None instead of panicing if there is no current ExecutionState or

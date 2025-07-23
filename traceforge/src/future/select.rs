@@ -1,8 +1,8 @@
 /// Must's copy of the `tokio::select` macro
-/// 1. Instead of tokio's run time, use amzn_must::future
+/// 1. Instead of tokio's run time, use traceforge::future
 /// 2. `tokio::select` allows specifying `start` (where to start evaluating the `poll`), and the default
 ///    behavior is randomized. Currently, we hard code the `start` to the beginning. TODO: revisit `start`
-use amzn_must_macros;
+use traceforge_macros;
 
 macro_rules! doc {
     ($select:item) => {
@@ -474,7 +474,7 @@ macro_rules! select {
         #[doc(hidden)]
         mod __tokio_select_util {
             // Generate an enum with one variant per select branch
-            amzn_must_macros::select_priv_declare_output_enum!( ( $($count)* ) );
+            traceforge_macros::select_priv_declare_output_enum!( ( $($count)* ) );
         }
 
         // `tokio::macros::support` is a public, but doc(hidden) module
@@ -580,7 +580,7 @@ macro_rules! select {
                                 #[allow(unused_variables)]
                                 #[allow(unused_mut)]
                                 match &out {
-                                    amzn_must_macros::select_priv_clean_pattern!($bind) => {}
+                                    traceforge_macros::select_priv_clean_pattern!($bind) => {}
                                     _ => continue,
                                 }
 
@@ -659,7 +659,7 @@ macro_rules! select {
 
     ( $p:pat = $($t:tt)* ) => {
         // Nondeterministically select the branch that should be checked first
-        $crate::select!(@{ start={ use amzn_must::Nondet; let r = 0usize..(BRANCHES as usize); r.nondet() as u32 }; () } $p = $($t)*)
+        $crate::select!(@{ start={ use traceforge::Nondet; let r = 0usize..(BRANCHES as usize); r.nondet() as u32 }; () } $p = $($t)*)
 
         // Randomly generate a starting point. This makes `select!` a bit more
         // fair and avoids always polling the first future.

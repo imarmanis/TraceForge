@@ -323,7 +323,7 @@ impl ConfigBuilder {
     }
 
     /// Allow the exploration to continue even after an assertion violation
-    /// has been discovered. Works only with `amzn_must::assert`s since unlike `std::assert`,
+    /// has been discovered. Works only with `traceforge::assert`s since unlike `std::assert`,
     /// it does not panic
     pub fn with_keep_going_after_error(mut self, b: bool) -> Self {
         self.0.keep_going_after_error = b;
@@ -1053,7 +1053,7 @@ pub fn sample<
 /// ```ignore
 /// let mut sum = 0;
 /// for i in 0..5 {
-///     let n: i32 = amzn_must::recv_msg_block();
+///     let n: i32 = traceforge::recv_msg_block();
 ///     sum += n;
 /// }
 /// ```
