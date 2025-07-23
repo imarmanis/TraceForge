@@ -1,4 +1,4 @@
-//! Must's implementation of [`tokio::sync::oneshot`].
+//! TraceForge's implementation of [`tokio::sync::oneshot`].
 
 use crate::*;
 

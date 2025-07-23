@@ -197,7 +197,7 @@ fn push_with_thread_test() -> () {
     // So 2 ^ 3 == 8
     // This is despite the introduction of an extra thread which handles the queue. Since there
     // are no choices to make about when the queue is executed or when the messages are delivered
-    // this is the same as the previous case. It's nice to see that Must is powerful enough to
+    // this is the same as the previous case. It's nice to see that TraceForge is powerful enough to
     // make this a "zero cost" abstraction in the sense that adding a new thread can have no effect
     // on the number of executions.
     assert_eq!(stats.execs, 8);
@@ -241,7 +241,7 @@ fn create_pull_job_queue(num_workers: usize) -> PullJobQueue {
         loop {
             // Instead of actually materializing the messages in a queue, we deliberately
             // try to receive the fewest possible messages, letting all of the jobs sit in
-            // the Must thread's queue.
+            // the TraceForge thread's queue.
             let WorkRequest { requester } =
                 recv_tagged_msg_block(|_, t| t.is_some() && t.unwrap() == REQUEST_TAG);
             let job: Job = recv_tagged_msg_block(|_, t| t.is_some() && t.unwrap() == SUBMIT_TAG);

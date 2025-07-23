@@ -353,7 +353,7 @@ macro_rules! two_pc_tests {
     }
 }
 
-// Must is sensitive to difference combinations of parameters.
+// TraceForge is sensitive to difference combinations of parameters.
 // At present it seems that MO consistency type is not working right; every test run
 // with the same parameters should get the same number of executions, but MO does not
 // do this.

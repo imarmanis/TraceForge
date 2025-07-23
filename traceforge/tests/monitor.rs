@@ -352,7 +352,7 @@ pub enum Action {
     MonitorReturnsErr,
     /// The monitor panics, often as a result of an false assert!(). The spec is not met.
     MonitorPanics,
-    /// The monitor tries to spawn a thread, or use some other Must API such as sending messages
+    /// The monitor tries to spawn a thread, or use some other TraceForge API such as sending messages
     /// etc. This is an illegal use of a monitor, and it should panic with an appropriate message.
     MonitorTriesToSpawn,
 }
@@ -524,7 +524,7 @@ fn execution_terminates_monitor_and_monitor_returns_err(ver: bool) {
     let result = std::panic::catch_unwind(|| {
         execution_terminates_monitor(ver, action);
     });
-    // This doesn't generate a counterexample because the body of the Must program
+    // This doesn't generate a counterexample because the body of the TraceForge program
     // terminates the monitor, and is therefore responsible for checking the return value
     // of the monitor.
     assert!(
@@ -631,7 +631,7 @@ fn execution_finishes_threads_and_monitor_tries_to_spawn(ver: bool) {
     let result = std::panic::catch_unwind(|| {
         execution_finishes_threads(ver, action);
     });
-    assert_counterexample(action, result, "only inside a Must test");
+    assert_counterexample(action, result, "only inside a TraceForge test");
 }
 
 #[test]
@@ -708,7 +708,7 @@ fn estimate_deadlocks_and_monitor_panics() {
 fn execution_deadlocks_and_monitor_tries_to_spawn(ver: bool) {
     let action = Action::MonitorTriesToSpawn;
     let result = std::panic::catch_unwind(|| execution_deadlocks(ver, action));
-    assert_counterexample(action, result, "only inside a Must test");
+    assert_counterexample(action, result, "only inside a TraceForge test");
 }
 
 #[test]

@@ -659,7 +659,7 @@ fn unstable_future() {
                     let _ = f.await;
                 });
                 // Make it even worse by injecting some backtracking
-                // which can make Must complain about program being incorrect
+                // which can make TraceForge complain about program being incorrect
                 nondet();
             },
         );

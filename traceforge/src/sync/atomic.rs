@@ -1,4 +1,4 @@
-//! Must's implementation of [`tokio::sync::atomic`].
+//! TraceForge's implementation of [`tokio::sync::atomic`].
 
 use crate::channel::*;
 use crate::thread::*;

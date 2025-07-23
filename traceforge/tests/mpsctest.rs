@@ -89,7 +89,7 @@ where
             }
             ChannelMsgRequest::IsEmpty(_tid) => {
                 // This can't be implemented efficiently in the current design because
-                // we are using Must's own message queues, but Must doesn't offer a peek() operation
+                // we are using TraceForge's own message queues, but TraceForge doesn't offer a peek() operation
                 todo!()
             }
         }

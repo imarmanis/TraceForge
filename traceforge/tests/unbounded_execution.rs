@@ -69,9 +69,9 @@ fn test_simple_unbounded_loop() {
     });
 }
 
-/// This exposes a strange Must corner case / performance issue.
-/// Must can almost instantly model check the previous unbounded loop
-/// But with a single call to nondet() like this, it seems that Must will
+/// This exposes a strange TraceForge corner case / performance issue.
+/// TraceForge can almost instantly model check the previous unbounded loop
+/// But with a single call to nondet() like this, it seems that TraceForge will
 /// never finish, or else it will take a prohibitive amount of time.
 #[ignore = "the test takes too long to run"]
 #[test]

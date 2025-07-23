@@ -98,7 +98,7 @@ impl TryFrom<String> for ThreadId {
 /// the creation of a thread id is needed.
 ///
 /// Instead of associating an integer with each ThreadId, a better design is to give each thread
-/// a name using amzn_TraceForge::thread::builder.name()
+/// a name using traceForge::thread::builder.name()
 pub fn construct_thread_id(numeric_id: u32) -> ThreadId {
     ThreadId {
         opaque_id: numeric_id,
@@ -111,7 +111,7 @@ pub fn construct_thread_id(numeric_id: u32) -> ThreadId {
 /// See `construct_thread_id` for more information.
 ///
 /// Instead of associating an integer with each ThreadId, a better design is to give each thread
-/// a name using amzn_TraceForge::thread::builder.name()
+/// a name using traceForge::thread::builder.name()
 impl From<ThreadId> for u32 {
     fn from(tid: ThreadId) -> Self {
         tid.opaque_id

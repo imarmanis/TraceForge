@@ -269,7 +269,7 @@ impl<T: ?Sized> Mutex<T> {
 
 impl<T: ?Sized + Debug> Debug for Mutex<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // SAFETY: The Must engine runs single-threaded, so
+        // SAFETY: The TraceForge model checking engine runs single-threaded, so
         // only that thread is able to access `inner` at the time of this call.
         Debug::fmt(&unsafe { &*self.inner.get() }, f)
     }

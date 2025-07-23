@@ -38,7 +38,6 @@ pub(crate) trait Actor<M: MessageTraits, RetType> {
 }
 
 /// An example protocol using the actor trait.
-/// The protocol is described in the Must book.
 /// Essentially, a server generates one-time use tokens. Clients can generate tokens
 /// and use them. The server checks that a token used by the client exists and was not
 /// used before.

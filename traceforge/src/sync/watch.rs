@@ -1,4 +1,4 @@
-//! Must's implementation of [`tokio::sync::watch`].
+//! TraceForge's implementation of [`tokio::sync::watch`].
 
 use futures::task::Context;
 use futures::task::Poll;

@@ -14,7 +14,7 @@ fn test_nondet() {
 
         // Show that the type system allows us to use the same range to extract
         // another nondet value. This is possible because the Nondet<T> type
-        // from Must takes a reference.
+        // from TraceForge takes a reference.
         let _n2 = numbers.nondet();
     });
 }

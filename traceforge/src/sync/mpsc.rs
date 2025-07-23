@@ -1,4 +1,4 @@
-//! Must's implementation of [`tokio::sync::mpsc`].
+//! TraceForge's implementation of [`tokio::sync::mpsc`].
 use crate::*;
 
 // The current version ignores the buffer size
