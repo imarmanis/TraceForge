@@ -15,7 +15,7 @@ use crate::runtime::task::TaskId;
 use crate::runtime::thread::{self, switch};
 use crate::thread::Thread;
 use crate::CommunicationModel::LocalOrder;
-use crate::TJoin;
+use crate::{nondet, TJoin};
 use std::error::Error;
 use std::fmt::{Display, Formatter};
 use std::future::Future;
@@ -210,43 +210,32 @@ where
             let mut join_waker: Option<Waker> = None;
             let res = loop {
                 // Wait for either the joiner to poll us, or the receive to succeed.
-                let (msg, ind) = crate::select_val_block(&fut_handles.receiver, &recv);
 
-                // TODO: Use `cast!` to avoid all the `unreachable!` mess.
-                // Joiner polled us
-                if ind == 0 {
-                    match msg.as_any().downcast::<PollerMsg>() {
-                        Ok(msg) => {
-                            match *msg {
-                                PollerMsg::Waker(waker) => {
-                                    // Save the waker and inform them it's Pending
-                                    join_waker = Some(waker.clone());
-                                    fut_handles.sender.send_msg(PollerMsg::Pending);
-                                }
-                                // We're cancelled, without having consumed anything
-                                PollerMsg::Cancel => break None,
-                                _ => unreachable!(),
-                            }
-                        }
-                        _ => unreachable!(),
+                // Guess beforehand what you expect to happen first
+                if nondet() {
+                    let result = recv.recv_msg_block();
+                    if let Some(waker) = join_waker {
+                        waker.wake();
                     }
+                    // We consumed the message
+                    break Some(result);
                 } else {
-                    // We did the receive, call the waker.
-                    assert!(ind == 1);
-                    match msg.as_any().downcast::<T>() {
-                        Ok(result) => {
-                            if let Some(waker) = join_waker {
-                                waker.wake();
-                            }
-                            // We consumed the message
-                            break Some(*result);
+                    // We cannot just send ::Pending and continue because we'd diverge.
+                    // => we need to do a blocking receive.
+                    match fut_handles.receiver.recv_msg_block() {
+                        PollerMsg::Waker(waker) => {
+                            // Save the waker and inform them it's Pending
+                            join_waker = Some(waker.clone());
+                            fut_handles.sender.send_msg(PollerMsg::Pending);
                         }
+                        // We're cancelled, without having consumed anything
+                        PollerMsg::Cancel => break None,
                         _ => unreachable!(),
                     }
                 }
             };
 
-            // Select is done, either wait for the request or cancel the receive
+            // Message is received, either wait for the request or undo the receive
             let val = match res {
                 // We consumed the message
                 Some(result) => {

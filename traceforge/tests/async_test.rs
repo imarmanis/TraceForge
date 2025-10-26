@@ -708,7 +708,7 @@ fn simple_async_recv() {
     // The send in executed in the same thread as the receive,
     // therefore the receive will first return pending, before succeeding
     assert_eq!(stats.execs, 1);
-    assert_eq!(stats.block, 0);
+    assert_eq!(stats.block, 2);
 }
 
 // async_sends that are not awaited have no effect
@@ -789,9 +789,9 @@ fn async_recv_pending() {
             // The asymmetry is due to the select always polling the left first,
             // irrespective of who woke them up.
             if left {
-                assert_eq!((stats.execs, stats.block), (8, 6));
+                assert_eq!((stats.execs, stats.block), (8, 7));
             } else {
-                assert_eq!((stats.execs, stats.block), (6, 8));
+                assert_eq!((stats.execs, stats.block), (6, 9));
             }
         }
     }
@@ -820,7 +820,7 @@ fn simple_cancel() {
             let _ = receiver1.async_recv_msg();
         });
     });
-    assert_eq!((stats.execs, stats.block), (1, 0));
+    assert_eq!((stats.execs, stats.block), (1, 1));
 }
 
 #[test]
@@ -833,7 +833,7 @@ fn nested_cancel() {
             });
         });
     });
-    assert_eq!((stats.execs, stats.block), (1, 0));
+    assert_eq!((stats.execs, stats.block), (1, 2));
 }
 
 // https://oeis.org/A268586, shifted by two
