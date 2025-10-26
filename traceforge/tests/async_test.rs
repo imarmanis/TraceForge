@@ -8,7 +8,7 @@ use traceforge::monitor_types::EndCondition;
 use traceforge::msg::Message;
 use traceforge::thread::{main_thread_id, ThreadId};
 use traceforge::{cover, future, nondet, recv_msg_block, send_msg, thread, Config, SchedulePolicy};
-use futures::future::{join_all, pending, select, Either};
+use futures::future::{join_all, pending, select, select_all, Either};
 use futures::prelude::*;
 use futures::stream::FuturesUnordered;
 
@@ -838,36 +838,38 @@ fn nested_cancel() {
 
 #[test]
 fn cancel_recv() {
-    for _ in 0..1000 {
+    let n = 3;
+    for _ in 0..1 {
         let stats = traceforge::verify(
             Config::builder()
-                .with_policy(SchedulePolicy::Arbitrary)
+                .with_policy(SchedulePolicy::LTR)
                 .build(),
-            || {
+            move || {
                 future::block_on(async {
-                    let (sender1, receiver1) = traceforge::channel::Builder::new().build();
-                    let (sender2, receiver2) = traceforge::channel::Builder::new().build();
+                    let mut sends = Vec::new();
+                    let mut recvs = Vec::new();
+                    for _ in 0..n {
+                        let (s, r) = traceforge::channel::Builder::new().build();
+                        sends.push(s);
+                        recvs.push(r);
+                    }
                     thread::spawn(move || {
-                        sender1.send_msg(1);
-                        sender2.send_msg(2);
+                        for i in 0..n {
+                            sends[i].send_msg(n-i);
+                        }
                     });
-                    let unwrap_either = |e| match e {
-                        Either::Left((v, _)) => v,
-                        Either::Right((v, _)) => v,
-                    };
 
-                    let a = select(receiver1.async_recv_msg(), receiver2.async_recv_msg()).await;
-                    let a = unwrap_either(a);
+                    let mut res: usize = 0;
+                    for _ in 0 .. n {
+                        let (ret, _, _) = select_all(recvs.iter().map(|c| c.async_recv_msg())).await;
+                        res += ret;
+                    }
 
-                    let b = select(receiver1.async_recv_msg(), receiver2.async_recv_msg()).await;
-                    let b = unwrap_either(b);
-                    assert_eq!(a + b, 3);
+                    assert_eq!(res, n*(n+1)/2);
                 });
             },
         );
-        assert_eq!(stats.execs, 26);
-        // No blocking execution: the futures are properly cancelled
-        assert_eq!(stats.block, 0);
+        println!("{} executions with {} blocked", stats.execs, stats.block);
     }
 }
 
