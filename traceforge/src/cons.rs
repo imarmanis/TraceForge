@@ -1,7 +1,7 @@
 use crate::event::Event;
 use crate::event_label::{AsEventLabel, LabelEnum, RecvMsg, SendMsg};
 use crate::exec_graph::ExecutionGraph;
-use crate::loc::CommunicationModel;
+use crate::loc::{CommunicationModel, WakeMsg};
 use crate::revisit::Revisit;
 use crate::vector_clock::VectorClock;
 
@@ -192,7 +192,12 @@ impl Consistency {
         check_concurrent: bool,
     ) -> Vec<Event> {
         // Sends that the receive can read from
-        let sends = g.matching_stores(recv.recv_loc());
+        let sends = g.matching_stores(recv.recv_loc())
+            // filter-out WakeMsg in our porf prefix: the respective futures were cancelled
+            .filter(|&s| {
+                // cached_porf to disregard own rf (porf;po prefix)
+                !recv.cached_porf().contains(s.pos()) || s.val().as_any().downcast::<WakeMsg>().is_err()
+            });
 
         // Keep those that will exist and be unread after the revisit, checking
         // for concurrent receives.
