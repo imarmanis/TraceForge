@@ -836,40 +836,63 @@ fn nested_cancel() {
     assert_eq!((stats.execs, stats.block), (1, 0));
 }
 
+// https://oeis.org/A268586, shifted by two
+fn weird_seq(n: u32) -> u32 {
+    let t = n * (n + 7);
+    if n >= 3 {
+        t*(2 as u32).pow(n-3)
+    } else {
+        t/(2 as u32).pow(3-n)
+    }
+}
+
 #[test]
-fn cancel_recv() {
-    let n = 3;
-    for _ in 0..1 {
-        let stats = traceforge::verify(
-            Config::builder()
-                .with_policy(SchedulePolicy::LTR)
-                .build(),
-            move || {
-                future::block_on(async {
-                    let mut sends = Vec::new();
-                    let mut recvs = Vec::new();
-                    for _ in 0..n {
-                        let (s, r) = traceforge::channel::Builder::new().build();
-                        sends.push(s);
-                        recvs.push(r);
-                    }
-                    thread::spawn(move || {
-                        for i in 0..n {
-                            sends[i].send_msg(n-i);
-                        }
-                    });
+fn select_collect_n() {
+    // Repetitions with arbitrary scheduling
+    let reps = 5;
+    for n in 1..5 {
+        let corrects : Vec<_> = (1..=n as u32).rev().map(weird_seq).collect();
+        for iter in 1..n {
+            if n == 5 && iter > 2 { break; } // Too long
+            let correct : u32 = corrects.iter().take(iter).product();
+            for _ in 0..reps {
+                let stats = traceforge::verify(
+                    Config::builder()
+                        .with_policy(SchedulePolicy::Arbitrary)
+                        .build(),
+                    move || {
+                        future::block_on(async {
+                            let mut sends = Vec::new();
+                            let mut recvs = Vec::new();
+                            for _ in 0..n {
+                                let (s, r) = traceforge::channel::Builder::new().build();
+                                sends.push(s);
+                                recvs.push(r);
+                            }
+                            thread::spawn(move || {
+                                for i in 0..n { sends[i].send_msg(i); }
+                            });
 
-                    let mut res: usize = 0;
-                    for _ in 0 .. n {
-                        let (ret, _, _) = select_all(recvs.iter().map(|c| c.async_recv_msg())).await;
-                        res += ret;
-                    }
+                            let mut res: usize = 0;
+                            for _ in 0 .. iter {
+                                let (ret, _, _) = select_all(
+                                        recvs.iter().map(|r|r.async_recv_msg())
+                                    ).await;
+                                res += ret;
+                            }
 
-                    assert_eq!(res, n*(n+1)/2);
-                });
-            },
-        );
-        println!("{} executions with {} blocked", stats.execs, stats.block);
+                            // Everything was collected
+                            if iter == n {
+                                assert_eq!(res, n*(n-1)/2);
+                            }
+                        });
+                    },
+                );
+                assert_eq!(stats.execs, correct as usize);
+                assert_eq!(stats.block, 0);
+                println!("{} executions with {} blocked", stats.execs, stats.block);
+            }
+        }
     }
 }
 
