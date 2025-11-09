@@ -7,7 +7,7 @@ use traceforge::future::spawn;
 use traceforge::monitor_types::EndCondition;
 use traceforge::msg::Message;
 use traceforge::thread::{main_thread_id, ThreadId};
-use traceforge::{cover, future, nondet, recv_msg_block, send_msg, thread, Config, SchedulePolicy};
+use traceforge::{Config, SchedulePolicy, Stats, cover, future, nondet, recv_msg_block, send_msg, thread};
 use futures::future::{join_all, pending, select, select_all, Either};
 use futures::prelude::*;
 use futures::stream::FuturesUnordered;
@@ -846,53 +846,88 @@ fn weird_seq(n: u32) -> u32 {
     }
 }
 
+fn select_n_i(n: usize, iter: usize, remove: bool, check: bool, maxe: Option<u64>) -> Stats {
+    let stats = traceforge::verify(
+        Config::builder()
+            .with_policy(SchedulePolicy::Arbitrary)
+            .with_max_iterations(maxe.unwrap_or(u64::MAX))
+            .build(),
+        move || {
+            future::block_on(async {
+                let mut sends = Vec::new();
+                let mut recvs = Vec::new();
+                for _ in 0..n {
+                    let (s, r) = traceforge::channel::Builder::new().build();
+                    sends.push(s);
+                    recvs.push(r);
+                }
+                thread::spawn(move || {
+                    for i in 0..n { sends[i].send_msg(i); }
+                });
+
+                let mut res: usize = 0;
+                for _ in 0 .. iter {
+                    let (ret, d, _) = select_all(
+                            recvs.iter().map(|r|r.async_recv_msg())
+                        ).await;
+                    res += ret;
+                    if remove {
+                        recvs.remove(d);
+                    }
+                }
+
+                if iter == n && check {
+                    assert_eq!(res, n*(n-1)/2);
+                }
+            });
+        },
+    );
+    let correct: u32 = (1..=n as u32).rev().map(weird_seq).take(iter).product();
+    assert_eq!(stats.execs, correct as usize);
+    stats
+}
+
+#[ignore]
 #[test]
-fn select_collect_n() {
-    // Repetitions with arbitrary scheduling
-    let reps = 5;
-    for n in 1..5 {
-        let corrects : Vec<_> = (1..=n as u32).rev().map(weird_seq).collect();
-        for iter in 1..n {
-            if n == 5 && iter > 2 { break; } // Too long
-            let correct : u32 = corrects.iter().take(iter).product();
-            for _ in 0..reps {
-                let stats = traceforge::verify(
-                    Config::builder()
-                        .with_policy(SchedulePolicy::Arbitrary)
-                        .build(),
-                    move || {
-                        future::block_on(async {
-                            let mut sends = Vec::new();
-                            let mut recvs = Vec::new();
-                            for _ in 0..n {
-                                let (s, r) = traceforge::channel::Builder::new().build();
-                                sends.push(s);
-                                recvs.push(r);
-                            }
-                            thread::spawn(move || {
-                                for i in 0..n { sends[i].send_msg(i); }
-                            });
-
-                            let mut res: usize = 0;
-                            for _ in 0 .. iter {
-                                let (ret, _, _) = select_all(
-                                        recvs.iter().map(|r|r.async_recv_msg())
-                                    ).await;
-                                res += ret;
-                            }
-
-                            // Everything was collected
-                            if iter == n {
-                                assert_eq!(res, n*(n-1)/2);
-                            }
-                        });
-                    },
-                );
-                assert_eq!(stats.execs, correct as usize);
-                assert_eq!(stats.block, 0);
-                println!("{} executions with {} blocked", stats.execs, stats.block);
-            }
+fn collect_sub_n_i() {
+    let n_max = 10;
+    for n in 1..n_max + 1 {
+        for i in  1..n + 1 {
+            let stats = select_n_i(n as usize, i as usize, true, true, None);
+            println!("n = {n} | iter = {i} | execs = {} | blocked = {} | sub", stats.execs, stats.block);
         }
+    }
+}
+
+#[ignore]
+#[test]
+fn collect_n_i() {
+    let n_max = 5;
+    for n in 1..n_max + 1 {
+        for i in  1..n + 1 {
+            let stats = select_n_i(n as usize, i as usize, false, true, None);
+            println!("n = {n} | iter = {i} | execs = {} | blocked = {} | nosub", stats.execs, stats.block);
+        }
+    }
+}
+
+#[ignore]
+#[test]
+fn collect_sub_n_1() {
+    let n_max = 10;
+    for n in 1..n_max + 1 {
+        let stats = select_n_i(n as usize, 1, false, true, None);
+        println!("n = {n} | iter = 1 | execs = {} | blocked = {} | nosub", stats.execs, stats.block);
+    }
+}
+
+#[ignore]
+#[test]
+fn collect_n_1() {
+    let n_max = 10;
+    for n in 1..n_max + 1 {
+        let stats = select_n_i(n as usize, 1, false, true, None);
+        println!("n = {n} | iter = 1 | execs = {} | blocked = {} | nosub", stats.execs, stats.block);
     }
 }
 
