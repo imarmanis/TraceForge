@@ -112,7 +112,7 @@ where
                 } else {
                     // Futured informed us to poll again
                     assert!(ind == 1);
-                    assert!(msg.as_any().downcast::<()>().is_ok());
+                    assert!(msg.as_any().downcast::<WakeMsg>().is_ok());
                     res = fut.as_mut().poll(&mut Context::from_waker(&fut_waker));
                 }
             };
