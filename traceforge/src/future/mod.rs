@@ -93,26 +93,20 @@ where
                 }
 
                 // Wait for either the joiner or the future, to poll or inform us, respectively
-                let (msg, ind) = crate::select_val_block(&fut_handles.receiver, &fut_recv);
 
-                // Joiner polled us, inform them it's pending
-                if ind == 0 {
-                    match msg.as_any().downcast::<PollerMsg>() {
-                        Ok(waker) => match *waker {
-                            PollerMsg::Waker(waker) => {
-                                assert!(ind == 0);
-                                join_waker = Some(waker.clone());
-                                fut_handles.sender.send_msg(PollerMsg::Pending);
-                            }
-                            PollerMsg::Cancel => break None,
-                            _ => unreachable!(),
-                        },
+                // Guess: joiner polled us, inform them it's pending
+                if nondet() {
+                    match fut_handles.receiver.recv_msg_block() {
+                        PollerMsg::Waker(waker) => {
+                            join_waker = Some(waker.clone());
+                            fut_handles.sender.send_msg(PollerMsg::Pending);
+                        }
+                        PollerMsg::Cancel => break None,
                         _ => unreachable!(),
                     }
                 } else {
                     // Futured informed us to poll again
-                    assert!(ind == 1);
-                    assert!(msg.as_any().downcast::<WakeMsg>().is_ok());
+                    fut_recv.recv_msg_block();
                     res = fut.as_mut().poll(&mut Context::from_waker(&fut_waker));
                 }
             };
