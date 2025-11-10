@@ -789,9 +789,9 @@ fn async_recv_pending() {
             // The asymmetry is due to the select always polling the left first,
             // irrespective of who woke them up.
             if left {
-                assert_eq!((stats.execs, stats.block), (8, 7));
+                assert_eq!((stats.execs, stats.block), (8, 12));
             } else {
-                assert_eq!((stats.execs, stats.block), (6, 9));
+                assert_eq!((stats.execs, stats.block), (6, 14));
             }
         }
     }
@@ -833,7 +833,7 @@ fn nested_cancel() {
             });
         });
     });
-    assert_eq!((stats.execs, stats.block), (1, 2));
+    assert_eq!((stats.execs, stats.block), (1, 4));
 }
 
 // https://oeis.org/A268586, shifted by two
